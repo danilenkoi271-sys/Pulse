@@ -5,6 +5,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { Spinner } from '@/components/ui/Spinner'
 import { Toasts } from '@/components/ui/Toasts'
 import { AccountSync } from '@/components/AccountSync'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 
 // Route-level code splitting: each page (and its heavy deps, e.g. the chart) loads on demand.
 const Landing = lazy(() => import('@/pages/Landing'))
@@ -23,6 +24,7 @@ export default function App() {
       <AccountSync />
       <Toasts />
       <BrowserRouter>
+        <ErrorBoundary>
         <Suspense fallback={<Fallback />}>
           <Routes>
             <Route path="/" element={<Landing />} />
@@ -38,6 +40,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
+        </ErrorBoundary>
       </BrowserRouter>
     </WalletProvider>
   )

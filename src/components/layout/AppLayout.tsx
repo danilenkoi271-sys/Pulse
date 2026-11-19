@@ -46,6 +46,9 @@ export function AppLayout() {
       )}
 
       <main className="flex-1 pb-16 md:pb-0"><Outlet context={{ geoBlocked: geo.blocked }} /></main>
+      <footer className="hidden border-t border-ink-800 px-5 py-3 text-center text-[11px] text-ink-500 md:block">
+        Pulse is an independent, non-custodial interface for Hyperliquid. Trading involves substantial risk of loss. <Link to="/terms" className="underline hover:text-ink-300">Terms</Link> · <Link to="/risk" className="underline hover:text-ink-300">Risk disclosure</Link>
+      </footer>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-ink-700/70 bg-ink-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden" aria-label="Mobile">
         {NAV.map((n) => (

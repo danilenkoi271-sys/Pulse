@@ -3,6 +3,7 @@ import { useAccount } from '@/stores/account'
 import { useMarkets } from '@/stores/markets'
 import { useWalletApi } from '@/wallet/context'
 import { AccountPanel } from '@/components/account/AccountPanel'
+import { ProfileCard } from '@/components/account/ProfileCard'
 import { fmtUsd, num } from '@/lib/format/numbers'
 
 export default function Portfolio() {
@@ -32,6 +33,7 @@ export default function Portfolio() {
         ))}
       </div>
       <div className="card"><AccountPanel /></div>
+      <ProfileCard />
     </div>
   )
 }

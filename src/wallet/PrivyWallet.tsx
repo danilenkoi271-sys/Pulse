@@ -8,7 +8,7 @@ import { WalletContext, type WalletApi } from './context'
 const chain = IS_TESTNET ? arbitrumSepolia : arbitrum
 
 function Bridge({ children }: { children: ReactNode }) {
-  const { ready, authenticated, login, logout, user } = usePrivy()
+  const { ready, authenticated, login, logout, user, getAccessToken } = usePrivy()
   const { wallets } = useWallets()
 
   // Prefer the wallet the user logged in with; fall back to the first connected one.
@@ -37,13 +37,15 @@ function Bridge({ children }: { children: ReactNode }) {
       address,
       isEmbedded,
       label: user?.email?.address ?? user?.google?.email ?? null,
+      userId: user?.id ?? null,
+      getAccessToken: async () => (await getAccessToken()) ?? null,
       login: () => login(),
       logout: async () => {
         await logout()
       },
       getMainWalletClient,
     }),
-    [ready, authenticated, address, isEmbedded, user, login, logout, getMainWalletClient],
+    [ready, authenticated, address, isEmbedded, user, login, logout, getAccessToken, getMainWalletClient],
   )
   return <WalletContext.Provider value={api}>{children}</WalletContext.Provider>
 }

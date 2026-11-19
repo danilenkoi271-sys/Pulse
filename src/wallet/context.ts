@@ -10,6 +10,9 @@ export interface WalletApi {
   address: `0x${string}` | null
   isEmbedded: boolean
   label: string | null
+  /** Privy user id (stable across wallets) — only for the optional profile feature. */
+  userId: string | null
+  getAccessToken: () => Promise<string | null>
   login: () => void
   logout: () => Promise<void>
   /** Returns a viem WalletClient for the main wallet, switched to the signing chain (Arbitrum). */
@@ -23,6 +26,8 @@ export const WalletContext = createContext<WalletApi>({
   address: null,
   isEmbedded: false,
   label: null,
+  userId: null,
+  getAccessToken: async () => null,
   login: () => undefined,
   logout: async () => undefined,
   getMainWalletClient: async () => {

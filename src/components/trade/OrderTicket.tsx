@@ -12,6 +12,8 @@ import { Modal } from '@/components/ui/Modal'
 import { displaySize, estimateFee, estimateLiqPrice, isDecimal, validateOrder, type OrderInput, type Side } from '@/lib/hl/orders'
 import { fmtPrice, fmtUsd, num } from '@/lib/format/numbers'
 import { builderFeeToPercent } from '@/config/env'
+import { BuilderFeeNotice } from './BuilderFeeNotice'
+import { TERMS_VERSION, useSettings } from '@/stores/settings'
 
 interface Props {
   market: Market
@@ -29,6 +31,8 @@ export function OrderTicket({ market, ctx, pickedPrice, geoBlocked }: Props) {
   const { builder } = useBuilder()
   const { place } = useOrderActions()
   const oneClick = useOneClick()
+  const accepted = useSettings((st) => st.acceptedTerms >= TERMS_VERSION)
+  const acceptTerms = useSettings((st) => st.accept)
   const aad = useActiveAssetData(wallet.address, market.coin)
   const position = positions.find((p) => p.coin === market.coin)
   const isSpot = market.kind === 'spot'
@@ -104,6 +108,7 @@ export function OrderTicket({ market, ctx, pickedPrice, geoBlocked }: Props) {
 
   const disabledReason =
     geoBlocked ? 'Trading is unavailable in your region'
+    : builder.needsApproval || builder.checking ? 'Approve the interface fee first'
     : !validation.ok && size ? validation.errors[0]
     : !size ? 'Enter a size'
     : insufficient ? 'Insufficient margin'
@@ -216,7 +221,7 @@ export function OrderTicket({ market, ctx, pickedPrice, geoBlocked }: Props) {
         {!isSpot && <Row k="Margin required" v={fmtUsd(margin)} />}
         {!isSpot && <Row k={<>Est. liquidation <Help text={HELP.liquidation} /></>} v={liq ? fmtPrice(liq) : '—'} />}
         <Row k={`Est. fee (${isMaker ? 'maker' : 'taker'})`} v={fmtUsd(feeEst.protocol)} />
-        {builder.active && <Row k="Interface fee" v={`${fmtUsd(feeEst.builder)} (${builderFeeToPercent(builder.fee)})`} />}
+        {builder.configured && <Row k="Interface fee" v={`${fmtUsd((notional * builder.fee) / 100_000)} (${builderFeeToPercent(builder.fee)})`} />}
         <Row k="Available" v={fmtUsd(availableUsd)} />
       </dl>
 
@@ -227,8 +232,15 @@ export function OrderTicket({ market, ctx, pickedPrice, geoBlocked }: Props) {
         </p>
       )}
 
+      <BuilderFeeNotice />
+
       {!wallet.authenticated ? (
         <button className="btn-primary" onClick={wallet.login} disabled={!wallet.configured}>{wallet.configured ? 'Connect to trade' : 'Wallet login not configured'}</button>
+      ) : !accepted ? (
+        <div className="space-y-2 rounded-lg border border-ink-600 bg-ink-850 p-3 text-xs text-ink-200">
+          <p>Leveraged trading can lose more than you expect, quickly. By continuing you accept the <Link to="/terms" className="text-pulse-300 underline">Terms</Link> and <Link to="/risk" className="text-pulse-300 underline">Risk disclosure</Link>.</p>
+          <button className="btn-primary w-full" onClick={acceptTerms}>I understand and accept</button>
+        </div>
       ) : (
         <button className={isBuy ? 'btn-up' : 'btn-down'} disabled={!!disabledReason} onClick={() => setConfirming(true)}>
           {disabledReason ?? `${isSpot ? (isBuy ? 'Buy' : 'Sell') : isBuy ? 'Long' : 'Short'} ${market.label}`}
