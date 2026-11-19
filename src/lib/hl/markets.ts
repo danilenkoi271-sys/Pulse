@@ -33,6 +33,17 @@ export const ctxFromSpot = (c: { prevDayPx: string; dayNtlVlm: string; markPx: s
   oracle: num(c.markPx),
 })
 
+/**
+ * HIP-3 fee multiplier vs. the base protocol fee (per Hyperliquid's fee docs): the deployer's fee share
+ * is added on top (scale ≤ 1), or — above 100% — the protocol fee is raised to equal the deployer fee.
+ * Growth mode cuts the base protocol fee by 90%.
+ */
+export function hip3FeeMult(scale: number, growth: boolean): number {
+  const s = Number.isFinite(scale) && scale >= 0 ? scale : 1
+  const base = growth ? 0.1 : 1
+  return s <= 1 ? base * (1 + s) : base * 2 * s
+}
+
 export interface LoadedMarkets {
   markets: Market[]
   ctx: Record<string, MarketCtx>
@@ -57,7 +68,7 @@ export async function loadMarkets(): Promise<LoadedMarkets> {
     if (u.isDelisted) return
     const m: Market = {
       key: u.name, coin: u.name, kind: 'perp', dex: '', base: u.name, quote: 'USDC', label: u.name,
-      assetId: i, szDecimals: u.szDecimals, maxLeverage: u.maxLeverage, onlyIsolated: !!u.onlyIsolated, ctxIndex: i,
+      assetId: i, szDecimals: u.szDecimals, maxLeverage: u.maxLeverage, onlyIsolated: !!u.onlyIsolated, ctxIndex: i, feeMult: 1,
     }
     markets.push(m)
     byDex[''].push(m)
@@ -78,6 +89,7 @@ export async function loadMarkets(): Promise<LoadedMarkets> {
           key: coin, coin, kind: 'hip3', dex, base: coin.split(':')[1], quote: 'USDC', label: coin.split(':')[1],
           assetId: 100000 + dexIndex * 10000 + i, szDecimals: u.szDecimals, maxLeverage: u.maxLeverage,
           onlyIsolated: !!u.onlyIsolated || u.marginMode === 'strictIsolated' || u.marginMode === 'noCross', ctxIndex: i,
+          feeMult: hip3FeeMult(Number((u as { deployerFeeScale?: string }).deployerFeeScale ?? 1), u.growthMode === 'enabled'),
         }
         markets.push(m)
         byDex[dex].push(m)
@@ -95,7 +107,7 @@ export async function loadMarkets(): Promise<LoadedMarkets> {
     const coin = u.name === 'PURR/USDC' ? 'PURR/USDC' : `@${u.index}`
     const m: Market = {
       key: coin, coin, kind: 'spot', dex: '', base: base.name, quote: quote.name, label: `${base.name}/${quote.name}`,
-      assetId: 10000 + u.index, szDecimals: base.szDecimals, maxLeverage: 1, onlyIsolated: false, ctxIndex: u.index,
+      assetId: 10000 + u.index, szDecimals: base.szDecimals, maxLeverage: 1, onlyIsolated: false, ctxIndex: u.index, feeMult: 1,
     }
     spot.push(m)
     const c = spotCtxs[u.index]

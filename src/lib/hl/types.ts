@@ -16,6 +16,8 @@ export interface Market {
   onlyIsolated: boolean
   /** Index into the ctx array for the market's dex (perp/hip3) or spot universe. */
   ctxIndex: number
+  /** Multiplier on base protocol fees (HIP-3 deployer fee scale / growth mode). 1 for core perps & spot. */
+  feeMult: number
 }
 
 export interface MarketCtx {
