@@ -5,17 +5,19 @@ import { TransferCard } from '@/components/funds/TransferCard'
 import { AgentCard } from '@/components/funds/AgentCard'
 import { AccountModeCard } from '@/components/funds/AccountModeCard'
 import { ConnectButton } from '@/components/layout/ConnectButton'
+import { ARBITRUM, IS_TESTNET } from '@/config/env'
 
 export default function Funds() {
   const w = useWalletApi()
   return (
-    <div className="mx-auto max-w-[1100px] px-3 py-5 sm:px-5">
-      <h1 className="text-xl font-bold">Funds</h1>
-      <p className="mt-1 text-sm text-ink-300">Deposits and withdrawals go directly between your wallet and Hyperliquid. Pulse never touches your funds.</p>
+    <div className="mx-auto max-w-[1200px] px-3 py-6 sm:px-6">
+      <p className="k">{ARBITRUM.name}{IS_TESTNET ? ' · testnet' : ''}</p>
+      <h1 className="display mt-1 text-[clamp(38px,6vw,64px)] text-bone">Funds</h1>
+      <p className="mt-3 max-w-xl text-[13px] text-mute">Money moves between your wallet and Hyperliquid directly. Pulse never sits in the middle.</p>
       {!w.authenticated && (
-        <div className="card mt-4 flex flex-wrap items-center justify-between gap-3 p-5 text-sm text-ink-300">Connect your wallet to deposit, withdraw and manage one-click trading.<ConnectButton /></div>
+        <div className="plate mt-6 flex flex-wrap items-center justify-between gap-3 p-5 text-[13px] text-mute">Connect a wallet to deposit, withdraw and manage one-click trading.<ConnectButton size="md" /></div>
       )}
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
         <DepositCard />
         <WithdrawCard />
         <TransferCard />

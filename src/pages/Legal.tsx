@@ -3,15 +3,15 @@ import type { ReactNode } from 'react'
 
 function Doc({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <Link to="/" className="text-sm text-ink-400 hover:text-ink-200">← Home</Link>
-      <h1 className="mt-3 text-3xl font-bold">{title}</h1>
-      <p className="mt-1 text-xs text-ink-400">Template text — have qualified counsel review and adapt it before launch.</p>
-      <div className="mt-6 space-y-5 text-sm leading-relaxed text-ink-200">{children}</div>
+    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+      <Link to="/" className="k hover:text-bone">← Pulse</Link>
+      <h1 className="display mt-4 text-[clamp(44px,8vw,84px)] text-bone">{title}</h1>
+      <p className="mt-3 border-l-2 border-warn pl-2 text-[12px] text-warn">Template text. Have qualified counsel review and adapt it before relying on it.</p>
+      <div className="mt-8 space-y-5 text-[14px] leading-relaxed text-text">{children}</div>
     </div>
   )
 }
-const H = ({ children }: { children: ReactNode }) => <h2 className="pt-2 text-lg font-semibold text-white">{children}</h2>
+const H = ({ children }: { children: ReactNode }) => <h2 className="display-wide border-t border-line pt-5 text-[18px] text-bone">{children}</h2>
 
 export function Risk() {
   return (

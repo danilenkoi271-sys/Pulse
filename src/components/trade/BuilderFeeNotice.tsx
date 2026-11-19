@@ -12,21 +12,19 @@ export function BuilderFeeNotice() {
   const w = useWalletApi()
   const getEx = useMainExchange()
   const { status, error, approve } = useBuilderStore()
-  if (!BUILDER || !w.authenticated || !w.address) return null
-  if (builder.active) return null // fee is shown in the ticket's fee rows instead
+  if (!BUILDER || !w.authenticated || !w.address || builder.active) return null
 
   const run = async () => {
     try {
-      const ok = await approve(await getEx(), w.address!)
-      if (ok) toast.success('Interface fee approved')
+      if (await approve(await getEx(), w.address!)) toast.success('Fee approved')
     } catch (e) { toast.error('Approval failed', e instanceof Error ? e.message : String(e)) }
   }
   return (
-    <div className="rounded-lg border border-pulse-500/40 bg-pulse-600/10 p-3 text-xs">
-      <p className="font-semibold text-pulse-300">Interface fee: {builderFeeToPercent(BUILDER.fee)} per trade <Help text="Pulse adds this small fee on top of Hyperliquid's fees, paid to the interface operator. You approve a maximum once with your main wallet, can see it on every order, and can revoke it on Hyperliquid at any time." /></p>
-      <p className="mt-1 text-ink-300">Approve once (a free signature — no gas) to start trading on Pulse. Your funds are never touched.</p>
-      {error && <p className="mt-1 text-down">{error}</p>}
-      <button className="btn-primary mt-2 w-full py-1.5 text-xs" disabled={status === 'working' || status === 'checking'} onClick={run}>{status === 'working' ? 'Waiting for wallet…' : status === 'checking' ? 'Checking…' : `Approve ${builderFeeToPercent(BUILDER.fee)} fee`}</button>
+    <div className="border border-lime/50 p-3">
+      <p className="k !text-lime">Pulse fee · {builderFeeToPercent(BUILDER.fee)} per trade <Help text="Pulse adds this on top of Hyperliquid's own fees. You approve a maximum once with your main wallet (a free signature, no gas), see it on every order, and can revoke it on Hyperliquid any time." /></p>
+      <p className="mt-1.5 text-[12px] text-mute">Approve once to trade here. Your funds are never touched.</p>
+      {error && <p className="mt-1 text-[11px] text-down">{error}</p>}
+      <button className="btn-lime btn-sm mt-2 w-full" disabled={status === 'working' || status === 'checking'} onClick={run}>{status === 'working' ? 'Waiting…' : status === 'checking' ? 'Checking…' : `Approve ${builderFeeToPercent(BUILDER.fee)}`}</button>
     </div>
   )
 }

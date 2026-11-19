@@ -56,7 +56,7 @@ export default function PrivyWallet({ children }: { children: ReactNode }) {
       appId={PRIVY_APP_ID}
       config={{
         loginMethods: ['email', 'google', 'wallet'],
-        appearance: { theme: 'dark', accentColor: '#7c5cff', showWalletLoginFirst: false, walletList: ['metamask', 'rabby_wallet', 'phantom', 'detected_ethereum_wallets', 'wallet_connect'], walletChainType: 'ethereum-only' },
+        appearance: { theme: '#0a0a08', accentColor: '#d6ff3d', logo: '/favicon.svg', showWalletLoginFirst: false, walletList: ['metamask', 'rabby_wallet', 'phantom', 'detected_ethereum_wallets', 'wallet_connect'], walletChainType: 'ethereum-only' },
         embeddedWallets: { ethereum: { createOnLogin: 'users-without-wallets' } },
         defaultChain: chain,
         supportedChains: [chain],

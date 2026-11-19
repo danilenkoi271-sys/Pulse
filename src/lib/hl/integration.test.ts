@@ -48,3 +48,41 @@ describe.skipIf(!live)('live testnet signing', () => {
   it('sendAsset signature recovers', () =>
     userSigned((ex, a) => ex.sendAsset({ destination: a, sourceDex: '', destinationDex: 'spot', token: 'USDC:0xeb62eee3685fc4c43992febb8a5f6a24', amount: '1' })), 30_000)
 })
+
+
+// Read-only: asset ids computed by Pulse must equal the SDK's own symbol converter (wrong id = wrong market).
+describe.skipIf(!live)('asset ids match the SDK converter (network from VITE_HL_NETWORK)', () => {
+  it('perp, HIP-3 and spot ids agree', async () => {
+    const { SymbolConverter } = await import('@nktkas/hyperliquid/utils')
+    const { loadMarkets } = await import('./markets')
+    const { httpTransport } = await import('./clients')
+    const conv = await SymbolConverter.create({ transport: httpTransport, dexs: ['xyz'] })
+    const { markets } = await loadMarkets()
+    expect(markets.length).toBeGreaterThan(100)
+    let checked = 0
+    for (const m of markets.filter((x) => x.kind !== 'spot')) {
+      const id = conv.getAssetId(m.coin)
+      if (id === undefined) continue
+      expect(m.assetId, m.coin).toBe(id)
+      checked++
+    }
+    expect(checked).toBeGreaterThan(100)
+    const hype = markets.find((m) => m.kind === 'spot' && m.label === 'HYPE/USDC')
+    if (hype) expect(hype.assetId).toBe(conv.getAssetId('HYPE/USDC'))
+    console.log('verified', checked, 'perp/HIP-3 asset ids; spot HYPE =', hype?.assetId)
+  }, 60_000)
+})
+
+
+describe.skipIf(!live)('deposit pre-flight against the real chain', () => {
+  it('verifies the configured bridge + USDC on-chain', async () => {
+    const { createPublicClient, http } = await import('viem')
+    const { arbitrum, arbitrumSepolia } = await import('viem/chains')
+    const { IS_TESTNET } = await import('@/config/env')
+    const { bridgePreflight } = await import('@/lib/bridge')
+    const pub = createPublicClient({ chain: IS_TESTNET ? arbitrumSepolia : arbitrum, transport: http() })
+    const r = await bridgePreflight(pub as never)
+    console.log('preflight:', JSON.stringify(r))
+    expect(r.ok).toBe(true)
+  }, 30_000)
+})

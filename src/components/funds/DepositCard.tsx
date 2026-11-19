@@ -1,24 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createPublicClient, formatUnits, http } from 'viem'
+import { createPublicClient, formatUnits, http, type PublicClient } from 'viem'
 import { arbitrum, arbitrumSepolia } from 'viem/chains'
 import { ARBITRUM, BRIDGE, IS_TESTNET, MIN_DEPOSIT_USDC } from '@/config/env'
 import { useWalletApi } from '@/wallet/context'
 import { subs } from '@/lib/hl/clients'
 import { ERC20_ABI, USDC_DECIMALS, parseUsdc, validateDeposit } from '@/lib/funds'
+import { bridgePreflight, type Preflight } from '@/lib/bridge'
 import { errMsg } from '@/lib/hl/trade'
 import { toast } from '@/stores/toasts'
 import { Modal } from '@/components/ui/Modal'
 import { shortAddr } from '@/lib/format/numbers'
 
-const pub = createPublicClient({ chain: IS_TESTNET ? arbitrumSepolia : arbitrum, transport: http() })
+const pub = createPublicClient({ chain: IS_TESTNET ? arbitrumSepolia : arbitrum, transport: http() }) as PublicClient
 
 type Step = 'idle' | 'signing' | 'confirming' | 'crediting' | 'done'
+const order: Step[] = ['idle', 'signing', 'confirming', 'crediting', 'done']
 
 export function DepositCard() {
   const w = useWalletApi()
   const [amount, setAmount] = useState('')
   const [usdc, setUsdc] = useState<bigint | null>(null)
   const [eth, setEth] = useState<bigint | null>(null)
+  const [check, setCheck] = useState<Preflight | null>(null)
   const [confirm, setConfirm] = useState(false)
   const [step, setStep] = useState<Step>('idle')
   const [tx, setTx] = useState<`0x${string}` | null>(null)
@@ -33,11 +36,12 @@ export function DepositCard() {
         pub.getBalance({ address: w.address }),
       ])
       setUsdc(b); setEth(e)
-    } catch { /* RPC hiccup: keep last values */ }
+    } catch { /* keep last values */ }
   }, [w.address])
   useEffect(() => { void refresh() }, [refresh])
+  useEffect(() => { void bridgePreflight(pub).then(setCheck) }, [])
 
-  // Step 3: wait for Hyperliquid to credit the deposit (ledger update over the shared WebSocket).
+  // Wait for Hyperliquid to credit the deposit (ledger update over the shared WebSocket).
   useEffect(() => {
     if (step !== 'crediting' || !w.address) return
     let off: (() => Promise<void>) | null = null
@@ -52,17 +56,18 @@ export function DepositCard() {
 
   const error = amount ? validateDeposit(amount, usdc) : null
   const noGas = eth !== null && eth === 0n
+  const blocked = check !== null && !check.ok
 
   const send = async () => {
     const v = parseUsdc(amount)
     if (v === null || validateDeposit(amount, usdc)) return
     setErr(null); setStep('signing'); startedAt.current = Date.now()
     try {
+      const fresh = await bridgePreflight(pub) // re-verify immediately before moving money
+      setCheck(fresh)
+      if (!fresh.ok) throw new Error(fresh.reason)
       const wc = await w.getMainWalletClient() // also switches the wallet to Arbitrum
-      const hash = await wc.writeContract({
-        address: BRIDGE.usdc, abi: ERC20_ABI, functionName: 'transfer', args: [BRIDGE.address, v],
-        account: wc.account!, chain: wc.chain,
-      })
+      const hash = await wc.writeContract({ address: BRIDGE.usdc, abi: ERC20_ABI, functionName: 'transfer', args: [BRIDGE.address, v], account: wc.account!, chain: wc.chain })
       setTx(hash); setConfirm(false); setStep('confirming')
       await pub.waitForTransactionReceipt({ hash })
       setStep('crediting'); void refresh()
@@ -72,58 +77,66 @@ export function DepositCard() {
   }
 
   const reset = () => { setStep('idle'); setTx(null); setAmount(''); setErr(null) }
-  const steps: [Step, string][] = [['signing', 'Confirm in your wallet'], ['confirming', `Confirm on ${ARBITRUM.name}`], ['crediting', 'Credited on Hyperliquid (< 1 min)']]
-  const order: Step[] = ['idle', 'signing', 'confirming', 'crediting', 'done']
+  const stages: [Step, string][] = [['signing', 'Approve in your wallet'], ['confirming', `Mined on ${ARBITRUM.name}`], ['crediting', 'Credited on Hyperliquid']]
 
   return (
-    <section className="card p-5" aria-labelledby="dep-h">
-      <h2 id="dep-h" className="text-lg font-bold">Deposit USDC</h2>
-      <p className="mt-1 text-xs text-ink-300">From your wallet on {ARBITRUM.name} straight into Hyperliquid’s bridge. Pulse never holds your funds.</p>
+    <section className="ticks p-5" aria-labelledby="dep-h">
+      <p className="k !text-lime">01</p>
+      <h2 id="dep-h" className="display mt-1 text-[34px] text-bone">Deposit</h2>
+      <p className="mt-2 text-[13px] text-mute">USDC from your wallet on {ARBITRUM.name}, sent directly to Hyperliquid’s bridge contract. Pulse never holds it.</p>
 
-      <dl className="mt-4 space-y-1 text-xs">
-        <div className="flex justify-between"><dt className="text-ink-400">USDC on {ARBITRUM.name}</dt><dd className="tabular font-mono">{usdc === null ? '…' : formatUnits(usdc, USDC_DECIMALS)}</dd></div>
-        <div className="flex justify-between"><dt className="text-ink-400">ETH for gas</dt><dd className={`tabular font-mono ${noGas ? 'text-down' : ''}`}>{eth === null ? '…' : Number(formatUnits(eth, 18)).toFixed(5)}</dd></div>
-      </dl>
-      {noGas && <p className="mt-2 rounded-lg border border-warn/40 bg-warn/10 p-2 text-[11px] text-warn">You need a little {IS_TESTNET ? 'Arbitrum Sepolia ETH' : 'ETH on Arbitrum'} to pay the network fee.</p>}
+      <div className="mt-5 space-y-2">
+        <div className="rcpt"><span className="l">USDC in wallet</span><span className="d" /><span className="v">{usdc === null ? '…' : formatUnits(usdc, USDC_DECIMALS)}</span></div>
+        <div className="rcpt"><span className="l">{IS_TESTNET ? 'Sepolia ETH' : 'ETH'} for gas</span><span className="d" /><span className={`v ${noGas ? '!text-down' : ''}`}>{eth === null ? '…' : Number(formatUnits(eth, 18)).toFixed(5)}</span></div>
+        <div className="rcpt"><span className="l">Bridge check</span><span className="d" /><span className={`v ${check === null ? 'text-dim' : check.ok ? '!text-up' : '!text-down'}`}>{check === null ? 'checking…' : check.ok ? '✓ verified on-chain' : '✕ blocked'}</span></div>
+      </div>
+      {check && !check.ok && <p className="mt-3 border-l-2 border-down pl-2 text-[12px] text-down">{check.reason}</p>}
+      {noGas && <p className="mt-3 border-l-2 border-warn pl-2 text-[12px] text-warn">You need a little ETH on {ARBITRUM.name} to pay the network fee.</p>}
 
       {step === 'idle' ? (
         <>
-          <label className="label mt-4" htmlFor="dep-amt">Amount (USDC) — minimum {MIN_DEPOSIT_USDC}</label>
+          <label className="lab mt-5" htmlFor="dep-amt">Amount · USDC · min {MIN_DEPOSIT_USDC}</label>
           <div className="flex gap-1">
-            <input id="dep-amt" className="input font-mono" inputMode="decimal" placeholder={`${MIN_DEPOSIT_USDC}.00`} value={amount} onChange={(e) => setAmount(e.target.value.trim())} />
-            <button className="btn-ghost px-3 text-xs" onClick={() => usdc !== null && setAmount(formatUnits(usdc, USDC_DECIMALS))}>Max</button>
+            <input id="dep-amt" className="field" inputMode="decimal" placeholder={`${MIN_DEPOSIT_USDC}.00`} value={amount} onChange={(e) => setAmount(e.target.value.trim())} />
+            <button className="btn" onClick={() => usdc !== null && setAmount(formatUnits(usdc, USDC_DECIMALS))}>Max</button>
           </div>
-          {error && <p className="mt-1 text-xs text-down">{error}</p>}
-          {err && <p className="mt-1 text-xs text-down">{err}</p>}
-          <p className="mt-2 text-[11px] text-warn">Deposits below {MIN_DEPOSIT_USDC} USDC are <b>not credited and are lost permanently</b>. Only send native USDC on {ARBITRUM.name}.</p>
-          <button className="btn-primary mt-3 w-full" disabled={!amount || !!error || !w.authenticated} onClick={() => setConfirm(true)}>{w.authenticated ? 'Review deposit' : 'Connect wallet first'}</button>
+          {error && <p className="mt-1.5 text-[12px] text-down">{error}</p>}
+          {err && <p className="mt-1.5 text-[12px] text-down">{err}</p>}
+          <p className="mt-3 border-l-2 border-warn pl-2 text-[12px] leading-relaxed text-warn">Under {MIN_DEPOSIT_USDC} USDC is <b>not credited and is lost for good</b>. Only send native USDC on {ARBITRUM.name}. First time here? Send a small amount first, wait for it to land, then send the rest.</p>
+          <button className="btn-lime mt-4 h-11 w-full" disabled={!amount || !!error || !w.authenticated || blocked} onClick={() => setConfirm(true)}>{w.authenticated ? 'Review deposit' : 'Connect a wallet first'}</button>
         </>
       ) : (
-        <ol className="mt-4 space-y-2 text-sm">
-          {steps.map(([s, label]) => {
+        <ol className="mt-5 space-y-0">
+          {stages.map(([s, label], i) => {
             const done = order.indexOf(step) > order.indexOf(s)
             const active = step === s
-            return <li key={s} className={`flex items-center gap-2 ${done ? 'text-up' : active ? 'text-white' : 'text-ink-500'}`}><span aria-hidden>{done ? '✓' : active ? '●' : '○'}</span>{label}</li>
+            return (
+              <li key={s} className="flex gap-3">
+                <div className="flex flex-col items-center"><span className={`h-3 w-3 border ${done ? 'border-up bg-up' : active ? 'animate-blink border-lime bg-lime' : 'border-line2'}`} />{i < 2 && <span className={`w-px flex-1 ${done ? 'bg-up' : 'bg-line2'}`} />}</div>
+                <p className={`pb-4 font-mono text-[12px] ${done ? 'text-up' : active ? 'text-bone' : 'text-dim'}`}>{label}</p>
+              </li>
+            )
           })}
-          {tx && <li className="text-xs"><a className="text-pulse-300 underline" href={`${ARBITRUM.explorer}/tx/${tx}`} target="_blank" rel="noopener noreferrer">View transaction {shortAddr(tx)}</a></li>}
-          {step === 'done' && <li><button className="btn-ghost mt-1" onClick={reset}>Make another deposit</button></li>}
-          {step === 'crediting' && <li className="text-xs text-ink-400">Your funds are safe in the bridge; crediting normally takes under a minute.</li>}
+          {tx && <li className="pl-6 text-[12px]"><a className="text-lime underline" href={`${ARBITRUM.explorer}/tx/${tx}`} target="_blank" rel="noopener noreferrer">{shortAddr(tx)} on explorer ↗</a></li>}
+          {step === 'crediting' && <li className="pl-6 pt-2 text-[12px] text-dim">Your USDC is already in the bridge. Crediting normally takes under a minute.</li>}
+          {step === 'done' && <li className="pl-6 pt-3"><button className="btn" onClick={reset}>Another deposit</button></li>}
         </ol>
       )}
 
       {confirm && (
         <Modal title="Confirm deposit" onClose={() => step === 'idle' && setConfirm(false)}>
-          <dl className="space-y-2 text-sm">
-            <div className="flex justify-between"><dt className="text-ink-400">Amount</dt><dd className="font-mono">{amount} USDC</dd></div>
-            <div className="flex justify-between"><dt className="text-ink-400">Network</dt><dd>{ARBITRUM.name}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-ink-400">To (HL bridge)</dt><dd className="break-all text-right font-mono text-xs">{BRIDGE.address}</dd></div>
-            <div className="flex justify-between"><dt className="text-ink-400">Credited to</dt><dd className="font-mono text-xs">{shortAddr(w.address)} (you)</dd></div>
-            <div className="flex justify-between"><dt className="text-ink-400">Min / ETA</dt><dd>{MIN_DEPOSIT_USDC} USDC / under 1 min</dd></div>
-          </dl>
-          <p className="mt-3 text-[11px] text-ink-400">This is a plain USDC transfer to Hyperliquid’s official bridge contract; check the address in your wallet prompt matches.</p>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <button className="btn-ghost" disabled={step !== 'idle'} onClick={() => setConfirm(false)}>Cancel</button>
-            <button className="btn-primary" disabled={step !== 'idle'} onClick={send}>{step === 'signing' ? 'Waiting for wallet…' : 'Deposit'}</button>
+          <div className="space-y-2.5">
+            <div className="rcpt"><span className="l">Amount</span><span className="d" /><span className="v">{amount} USDC</span></div>
+            <div className="rcpt"><span className="l">Network</span><span className="d" /><span className="v">{ARBITRUM.name}</span></div>
+            <div className="rcpt"><span className="l">Credited to</span><span className="d" /><span className="v">{shortAddr(w.address)} (you)</span></div>
+            <div className="rcpt"><span className="l">Arrives</span><span className="d" /><span className="v">&lt; 1 min</span></div>
+          </div>
+          <p className="k mt-4">To (Hyperliquid bridge)</p>
+          <p className="mt-1 break-all border border-line2 bg-void p-2 font-mono text-[11px] text-bone">{BRIDGE.address}</p>
+          <p className="mt-3 text-[12px] leading-relaxed text-dim">A plain USDC transfer to the official bridge. Check that this exact address is what your wallet shows before you approve.</p>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button className="btn" disabled={step !== 'idle'} onClick={() => setConfirm(false)}>Cancel</button>
+            <button className="btn-lime" disabled={step !== 'idle'} onClick={send}>{step === 'signing' ? 'Check wallet…' : 'Deposit'}</button>
           </div>
         </Modal>
       )}

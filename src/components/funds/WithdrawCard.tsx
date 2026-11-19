@@ -43,39 +43,41 @@ export function WithdrawCard() {
   }
 
   return (
-    <section className="card p-5" aria-labelledby="wd-h">
-      <h2 id="wd-h" className="text-lg font-bold">Withdraw USDC</h2>
-      <p className="mt-1 text-xs text-ink-300">Sent to {ARBITRUM.name}. Always requires a signature from your <b>main wallet</b>.</p>
-      <dl className="mt-4 space-y-1 text-xs">
-        <div className="flex justify-between"><dt className="text-ink-400">Withdrawable</dt><dd className="tabular font-mono">{fmtUsd(withdrawable)}</dd></div>
-        <div className="flex justify-between"><dt className="text-ink-400">Fee</dt><dd className="tabular font-mono">{fmtUsd(WITHDRAW_FEE_USDC)}</dd></div>
-        <div className="flex justify-between"><dt className="text-ink-400">Estimated time</dt><dd>~{WITHDRAW_ETA}</dd></div>
-      </dl>
-      <label className="label mt-4" htmlFor="wd-amt">Amount (USDC)</label>
-      <div className="flex gap-1">
-        <input id="wd-amt" className="input font-mono" inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value.trim())} />
-        <button className="btn-ghost px-3 text-xs" onClick={() => setAmount(String(Math.floor(withdrawable * 1e6) / 1e6))}>Max</button>
+    <section className="ticks p-5" aria-labelledby="wd-h">
+      <p className="k !text-lime">02</p>
+      <h2 id="wd-h" className="display mt-1 text-[34px] text-bone">Withdraw</h2>
+      <p className="mt-2 text-[13px] text-mute">Paid out on {ARBITRUM.name}. Always needs a signature from your <b className="text-bone">main wallet</b>, never the one-click agent.</p>
+      <div className="mt-5 space-y-2">
+        <div className="rcpt"><span className="l">Withdrawable</span><span className="d" /><span className="v">{fmtUsd(withdrawable)}</span></div>
+        <div className="rcpt"><span className="l">Fee</span><span className="d" /><span className="v">{fmtUsd(WITHDRAW_FEE_USDC)}</span></div>
+        <div className="rcpt"><span className="l">Arrives in</span><span className="d" /><span className="v">~{WITHDRAW_ETA}</span></div>
       </div>
-      <label className="label mt-3" htmlFor="wd-dest">Destination address</label>
-      <input id="wd-dest" className="input font-mono text-xs" placeholder={w.address ?? '0x…'} value={dest} onChange={(e) => setDest(e.target.value.trim())} />
-      {custom && <p className="mt-1 text-[11px] text-warn">Sending to a different address. Double-check it — withdrawals can’t be reversed.</p>}
-      {error && (amount || dest) && <p className="mt-1 text-xs text-down">{error}</p>}
-      <button className="btn-primary mt-3 w-full" disabled={!w.authenticated || !amount || !!validateWithdraw(amount, withdrawable, destination)} onClick={() => setConfirm(true)}>Review withdrawal</button>
+      <label className="lab mt-5" htmlFor="wd-amt">Amount · USDC</label>
+      <div className="flex gap-1">
+        <input id="wd-amt" className="field" inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value.trim())} />
+        <button className="btn" onClick={() => setAmount(String(Math.floor(withdrawable * 1e6) / 1e6))}>Max</button>
+      </div>
+      <label className="lab mt-4" htmlFor="wd-dest">Destination address</label>
+      <input id="wd-dest" className="field !text-[11px]" placeholder={w.address ?? '0x…'} value={dest} onChange={(e) => setDest(e.target.value.trim())} />
+      {custom && <p className="mt-2 border-l-2 border-warn pl-2 text-[12px] text-warn">Different address from your wallet. Check every character. Withdrawals can’t be reversed.</p>}
+      {error && (amount || dest) && <p className="mt-1.5 text-[12px] text-down">{error}</p>}
+      <button className="btn-lime mt-4 h-11 w-full" disabled={!w.authenticated || !amount || !!validateWithdraw(amount, withdrawable, destination)} onClick={() => setConfirm(true)}>Review withdrawal</button>
 
       {confirm && (
         <Modal title="Confirm withdrawal" onClose={() => !busy && setConfirm(false)}>
-          <dl className="space-y-2 text-sm">
-            <div className="flex justify-between"><dt className="text-ink-400">Amount</dt><dd className="font-mono">{amount} USDC</dd></div>
-            <div className="flex justify-between"><dt className="text-ink-400">Fee</dt><dd className="font-mono">{WITHDRAW_FEE_USDC} USDC</dd></div>
-            <div className="flex justify-between"><dt className="text-ink-400">You receive</dt><dd className="font-mono font-semibold">{net.toFixed(2)} USDC</dd></div>
-            <div className="flex justify-between"><dt className="text-ink-400">Network</dt><dd>{ARBITRUM.name}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-ink-400">To</dt><dd className="break-all text-right font-mono text-xs">{destination}</dd></div>
-            <div className="flex justify-between"><dt className="text-ink-400">ETA</dt><dd>~{WITHDRAW_ETA}</dd></div>
-          </dl>
-          {err && <p className="mt-2 text-xs text-down">{err}</p>}
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <button className="btn-ghost" disabled={busy} onClick={() => setConfirm(false)}>Cancel</button>
-            <button className="btn-primary" disabled={busy} onClick={submit}>{busy ? 'Waiting for wallet…' : 'Withdraw'}</button>
+          <div className="space-y-2.5">
+            <div className="rcpt"><span className="l">Amount</span><span className="d" /><span className="v">{amount} USDC</span></div>
+            <div className="rcpt"><span className="l">Fee</span><span className="d" /><span className="v">{WITHDRAW_FEE_USDC} USDC</span></div>
+            <div className="rcpt"><span className="l">You receive</span><span className="d" /><span className="v !text-lime">{net.toFixed(2)} USDC</span></div>
+            <div className="rcpt"><span className="l">Network</span><span className="d" /><span className="v">{ARBITRUM.name}</span></div>
+            <div className="rcpt"><span className="l">Arrives in</span><span className="d" /><span className="v">~{WITHDRAW_ETA}</span></div>
+          </div>
+          <p className="k mt-4">To</p>
+          <p className="mt-1 break-all border border-line2 bg-void p-2 font-mono text-[11px] text-bone">{destination}</p>
+          {err && <p className="mt-3 text-[12px] text-down">{err}</p>}
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button className="btn" disabled={busy} onClick={() => setConfirm(false)}>Cancel</button>
+            <button className="btn-lime" disabled={busy} onClick={submit}>{busy ? 'Check wallet…' : 'Withdraw'}</button>
           </div>
         </Modal>
       )}

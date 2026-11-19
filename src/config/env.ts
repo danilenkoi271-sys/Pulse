@@ -6,7 +6,8 @@ const raw = import.meta.env
 
 export type HlNetwork = 'mainnet' | 'testnet'
 
-export const NETWORK: HlNetwork = raw.VITE_HL_NETWORK === 'mainnet' ? 'mainnet' : 'testnet'
+/** Mainnet unless explicitly set to "testnet". */
+export const NETWORK: HlNetwork = raw.VITE_HL_NETWORK === 'testnet' ? 'testnet' : 'mainnet'
 export const IS_TESTNET = NETWORK === 'testnet'
 
 /** Hyperliquid's signing chain: Arbitrum One (mainnet) / Arbitrum Sepolia (testnet). */

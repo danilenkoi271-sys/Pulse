@@ -28,22 +28,23 @@ export function AccountModeCard() {
   }
 
   return (
-    <section className="card p-5" aria-labelledby="am-h">
-      <h2 id="am-h" className="text-lg font-bold">Account mode</h2>
-      <p className="mt-1 text-sm text-ink-300">Current: <b className="text-white">{portfolio ? 'Portfolio margin' : unified ? 'Unified account' : 'Standard'}</b></p>
-      <p className="mt-2 text-xs leading-relaxed text-ink-400">
+    <section className="ticks p-5" aria-labelledby="am-h">
+      <p className="k !text-lime">04</p>
+      <h2 id="am-h" className="display mt-1 text-[34px] text-bone">Account mode</h2>
+      <p className="mt-2 k">Current <span className="text-lime">{portfolio ? 'Portfolio margin' : unified ? 'Unified' : 'Standard'}</span></p>
+      <p className="mt-3 text-[13px] leading-relaxed text-mute">
         {unified ? 'One USDC balance backs spot, perps and HIP-3 markets — no transfers needed.' : portfolio ? 'Portfolio margin pools eligible assets as collateral. Manage it on Hyperliquid.' : 'Standard keeps separate balances for perps, spot and each HIP-3 dex. Unified accounts share one balance across all of them and are simpler for most traders (limited to 50,000 actions/day).'}
       </p>
       {!portfolio && (
-        <button className="btn-ghost mt-3" disabled={!w.authenticated} onClick={() => setTarget(unified ? 'disabled' : 'unifiedAccount')}>{unified ? 'Switch back to standard' : 'Switch to unified account'}</button>
+        <button className="btn mt-4" disabled={!w.authenticated} onClick={() => setTarget(unified ? 'disabled' : 'unifiedAccount')}>{unified ? 'Switch back to standard' : 'Switch to unified account'}</button>
       )}
       {target && (
         <Modal title="Change account mode" onClose={() => !busy && setTarget(null)}>
-          <p className="text-sm text-ink-200">{target === 'unifiedAccount' ? 'Your spot and perps USDC will be merged into a single balance that collateralizes all cross-margin positions. You can switch back later.' : 'Balances will be separated into perps, spot and per-dex balances again.'}</p>
-          <p className="mt-2 text-xs text-warn">Open positions and orders stay as they are, but available balances and margin calculations change. Close risky positions first if unsure.</p>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <button className="btn-ghost" disabled={busy} onClick={() => setTarget(null)}>Cancel</button>
-            <button className="btn-primary" disabled={busy} onClick={apply}>{busy ? 'Waiting for wallet…' : 'Confirm'}</button>
+          <p className="text-[13px] leading-relaxed text-text">{target === 'unifiedAccount' ? 'Your spot and perps USDC will be merged into a single balance that collateralizes all cross-margin positions. You can switch back later.' : 'Balances will be separated into perps, spot and per-dex balances again.'}</p>
+          <p className="mt-3 border-l-2 border-warn pl-2 text-[12px] text-warn">Open positions and orders stay as they are, but available balances and margin calculations change. Close risky positions first if unsure.</p>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button className="btn" disabled={busy} onClick={() => setTarget(null)}>Cancel</button>
+            <button className="btn-lime" disabled={busy} onClick={apply}>{busy ? 'Check wallet…' : 'Confirm'}</button>
           </div>
         </Modal>
       )}

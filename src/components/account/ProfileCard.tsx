@@ -31,14 +31,14 @@ export function ProfileCard() {
   }
 
   return (
-    <div className="card p-4">
-      <h2 className="text-sm font-semibold">Profile <span className="font-normal text-ink-400">(optional)</span></h2>
-      <p className="mt-1 text-xs text-ink-400">Only a username is stored, linked to your wallet address. No keys or funds are ever stored.</p>
+    <div className="plate p-5">
+      <h2 className="k !text-bone">Profile <span className="text-dim">· optional</span></h2>
+      <p className="mt-2 text-[12px] text-mute">Only a username is stored, linked to your wallet address. No keys or funds are ever stored.</p>
       <div className="mt-3 flex gap-2">
-        <input className="input" aria-label="Username" placeholder="username" maxLength={20} value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} />
-        <button className="btn-ghost" disabled={!valid || busy || username === saved} onClick={save}>Save</button>
+        <input className="field" aria-label="Username" placeholder="username" maxLength={20} value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} />
+        <button className="btn" disabled={!valid || busy || username === saved} onClick={save}>Save</button>
       </div>
-      {username && !valid && <p className="mt-1 text-xs text-down">3–20 characters: a–z, 0–9, underscore.</p>}
+      {username && !valid && <p className="mt-1 text-[11px] text-down">3–20 characters: a–z, 0–9, underscore.</p>}
     </div>
   )
 }

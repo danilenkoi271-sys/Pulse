@@ -8,13 +8,14 @@ Pulse is *only* a front end. Orders are signed in the user's browser and sent st
 - [`@nktkas/hyperliquid`](https://github.com/nktkas/hyperliquid) 0.33.3 (Info / Exchange / Subscription clients)
 - Privy (email / Google embedded wallet + MetaMask, Rabby, Phantom EVM) · viem
 - TradingView Lightweight Charts · zustand · react-router
+- Self-hosted fonts (Anybody, Instrument Sans, Geist Mono): no third-party font requests, strict CSP stays strict
 - Supabase (optional; username profiles only)
 
 ## Quick start
 
 ```bash
 npm ci
-cp .env.example .env     # defaults to testnet
+cp .env.example .env     # defaults to MAINNET (real funds)
 npm run dev              # http://localhost:5173
 npm test                 # unit tests
 npm run build            # type-check + production build
@@ -27,13 +28,31 @@ Without `VITE_PRIVY_APP_ID` the app runs **read-only** (landing, markets, charts
 2. Copy the **App ID** into `VITE_PRIVY_APP_ID`. (The App *Secret* is never used and must never be put in the frontend.)
 3. Add every origin you serve from (`http://localhost:5173`, your Vercel URL / custom domain) to the app's **allowed origins** in the Privy dashboard.
 
+
+## Going live (real funds)
+
+Pulse now defaults to **Hyperliquid mainnet**. Two things only you can do:
+
+1. **Create a Privy app** ([dashboard.privy.io](https://dashboard.privy.io)): enable Email, Google and Wallet login, copy the App ID into `VITE_PRIVY_APP_ID`, and add your domain to the allowed origins.
+2. **Deploy** (see *Deploy to Vercel* below) with `VITE_PRIVY_APP_ID` set. Until the App ID exists, login (and therefore trading and deposits) is disabled by design.
+
+Real-money safeguards built in:
+- **Deposit pre-flight** runs before a deposit is offered *and again right before it is sent*: the bridge must be a live, unpaused contract and the USDC address must really be a 6-decimals `USDC` token on-chain, otherwise deposits are blocked.
+- Deposits below **5 USDC are blocked** (Hyperliquid loses them); the confirmation shows the exact bridge address to compare with your wallet prompt; the UI recommends a small first deposit.
+- Asset ids were verified on mainnet against the SDK's own converter for all 302 perp/HIP-3 markets (`HL_LIVE=1 VITE_HL_NETWORK=mainnet npm test`).
+- Constants checked on-chain (Arbitrum One): bridge `0x2Df1…3dF7` (live contract, holds ~$98M USDC, not paused), USDC `0xaf88…5831` (6 decimals).
+
+> **Bridge status.** Hyperliquid's docs describe the Arbitrum "Bridge2" deposit (plain native-USDC transfer, ≥5 USDC, credited in under a minute) and also label it *legacy/deprecated* in favour of CCTP. It is live today and is what wallet deposits on Arbitrum use, but **check Hyperliquid's docs before launch and periodically after**, and consider adding a CCTP route if they retire it.
+
+First live test: deposit the minimum (5 USDC), confirm it is credited, place a tiny order, close it, withdraw it. Only then scale up.
+
 ## Environment variables
 
 All `VITE_*` values are public (they ship in the bundle). See [`.env.example`](./.env.example).
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `VITE_HL_NETWORK` | `testnet` | `mainnet` or `testnet`. Switches API/WS URLs, bridge + USDC addresses, signing chain (Arbitrum One ↔ Arbitrum Sepolia). |
+| `VITE_HL_NETWORK` | `mainnet` | **Mainnet unless set to `testnet`** (anything else = real funds). Switches API/WS URLs, bridge + USDC addresses, signing chain (Arbitrum One ↔ Arbitrum Sepolia). |
 | `VITE_PRIVY_APP_ID` | – | Privy app id. Empty → read-only mode. |
 | `VITE_HIP3_DEXS` | `xyz` | Comma-separated HIP-3 dexes to list. Testnet has ~290 junk dexes, so this is an allow-list. |
 | `VITE_BUILDER_ADDRESS` / `VITE_BUILDER_FEE` | – | Builder code. **Off unless both are set and valid.** Fee is in **tenths of a basis point** (`10` = 0.01 %); perps max `100` (0.1 %). |
@@ -43,7 +62,7 @@ All `VITE_*` values are public (they ship in the bundle). See [`.env.example`](.
 
 ## What each stage covers & how to test it on testnet
 
-> Testnet faucet: Hyperliquid's faucet gives 1,000 mock USDC but **requires a prior mainnet deposit from the same address** ([docs](https://hyperliquid.gitbook.io/hyperliquid-docs/onboarding/testnet-faucet)). It credits the Hyperliquid testnet account directly — not the Arbitrum Sepolia bridge.
+> Testnet only — set `VITE_HL_NETWORK=testnet` to practise with fake funds. Faucet: Hyperliquid's faucet gives 1,000 mock USDC but **requires a prior mainnet deposit from the same address** ([docs](https://hyperliquid.gitbook.io/hyperliquid-docs/onboarding/testnet-faucet)). It credits the Hyperliquid testnet account directly — not the Arbitrum Sepolia bridge.
 
 **1 · Scaffold, login, market data, chart**
 - Landing page loads; live ticker shows prices (`/`).

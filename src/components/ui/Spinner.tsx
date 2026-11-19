@@ -1,3 +1,5 @@
+import { PulseLine } from '@/components/brand/Logo'
+
 export function Spinner({ className = '' }: { className?: string }) {
-  return <span className={`inline-block h-4 w-4 animate-spin rounded-full border-2 border-ink-500 border-t-pulse-400 ${className}`} role="status" aria-label="Loading" />
+  return <span className={`inline-flex ${className}`} role="status" aria-label="Loading"><PulseLine className="h-4 w-10" /></span>
 }
