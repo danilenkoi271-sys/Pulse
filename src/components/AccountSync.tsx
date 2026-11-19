@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useWalletApi } from '@/wallet/context'
 import { useAccount } from '@/stores/account'
+import { useAgent } from '@/stores/agent'
 
 /**
  * Starts/stops the live account subscriptions when the connected wallet changes.
@@ -19,6 +20,8 @@ export function AccountSync() {
     }
     if (target) start(target)
     else stop()
+    // Only a real (authenticated) wallet may use a stored agent key.
+    void useAgent.getState().load(authenticated ? address : null)
     return () => stop()
   }, [address, authenticated, start, stop])
 

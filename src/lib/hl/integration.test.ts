@@ -30,4 +30,21 @@ describe.skipIf(!live)('live testnet signing', () => {
     console.log('HL response:', message)
     expect(message.toLowerCase()).toContain(account.address.toLowerCase())
   }, 30_000)
+
+  // User-signed (EIP-712) actions use a different signing scheme than orders; verify each is accepted
+  // structurally: HL answers with OUR address, i.e. the typed-data signature recovered correctly.
+  const userSigned = async (run: (ex: ExchangeClient, addr: `0x${string}`) => Promise<unknown>) => {
+    const account = privateKeyToAccount(generatePrivateKey())
+    const ex = new ExchangeClient({ transport: new HttpTransport({ isTestnet: true }), wallet: account, signatureChainId: '0x66eee' })
+    let message = ''
+    try { message = JSON.stringify(await run(ex, account.address)) } catch (e) { message = e instanceof Error ? e.message : String(e) }
+    console.log('HL response:', message)
+    expect(message.toLowerCase()).toContain(account.address.toLowerCase())
+  }
+
+  it('approveAgent (with valid_until) signature recovers', () =>
+    userSigned((ex) => ex.approveAgent({ agentAddress: privateKeyToAccount(generatePrivateKey()).address, agentName: `Pulse valid_until ${Date.now() + 30 * 864e5}` })), 30_000)
+  it('withdraw3 signature recovers', () => userSigned((ex, a) => ex.withdraw3({ destination: a, amount: '5' })), 30_000)
+  it('sendAsset signature recovers', () =>
+    userSigned((ex, a) => ex.sendAsset({ destination: a, sourceDex: '', destinationDex: 'spot', token: 'USDC:0xeb62eee3685fc4c43992febb8a5f6a24', amount: '1' })), 30_000)
 })

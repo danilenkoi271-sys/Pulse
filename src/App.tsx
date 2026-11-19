@@ -11,6 +11,7 @@ const Landing = lazy(() => import('@/pages/Landing'))
 const Markets = lazy(() => import('@/pages/Markets'))
 const Trade = lazy(() => import('@/pages/Trade'))
 const Portfolio = lazy(() => import('@/pages/Portfolio'))
+const Funds = lazy(() => import('@/pages/Funds'))
 const Terms = lazy(() => import('@/pages/Legal').then((m) => ({ default: m.Terms })))
 const Risk = lazy(() => import('@/pages/Legal').then((m) => ({ default: m.Risk })))
 
@@ -32,6 +33,7 @@ export default function App() {
               <Route path="/trade" element={<Trade />} />
               <Route path="/trade/:coin" element={<Trade />} />
               <Route path="/portfolio" element={<Portfolio />} />
+              <Route path="/funds" element={<Funds />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

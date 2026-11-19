@@ -6,6 +6,7 @@ import { useAccount } from '@/stores/account'
 import { useActiveAssetData } from '@/hooks/useLiveData'
 import { useOrderActions } from '@/hooks/useOrderActions'
 import { useBuilder } from '@/hooks/useBuilder'
+import { useOneClick } from '@/hooks/useTradeExchange'
 import { Help, HELP } from '@/components/ui/Tooltip'
 import { Modal } from '@/components/ui/Modal'
 import { displaySize, estimateFee, estimateLiqPrice, isDecimal, validateOrder, type OrderInput, type Side } from '@/lib/hl/orders'
@@ -27,6 +28,7 @@ export function OrderTicket({ market, ctx, pickedPrice, geoBlocked }: Props) {
   const { positions, spot, fees, dexSummary } = useAccount()
   const { builder } = useBuilder()
   const { place } = useOrderActions()
+  const oneClick = useOneClick()
   const aad = useActiveAssetData(wallet.address, market.coin)
   const position = positions.find((p) => p.coin === market.coin)
   const isSpot = market.kind === 'spot'
@@ -233,6 +235,12 @@ export function OrderTicket({ market, ctx, pickedPrice, geoBlocked }: Props) {
         </button>
       )}
 
+      {wallet.authenticated && (
+        <p className="text-center text-[11px] text-ink-400">
+          {oneClick ? <>⚡ One-click trading is on</> : <>Wallet popup on every order · <Link to="/funds#one-click" className="text-pulse-300 underline">enable one-click</Link></>}
+        </p>
+      )}
+
       {confirming && (
         <Modal title="Confirm order" onClose={() => !busy && setConfirming(false)}>
           <div className="space-y-3 text-sm">
@@ -252,7 +260,7 @@ export function OrderTicket({ market, ctx, pickedPrice, geoBlocked }: Props) {
               {reduceOnly && <Row k="Reduce only" v="Yes" />}
               <Row k="Est. fees" v={`${fmtUsd(feeEst.total)}${builder.active ? ` (incl. ${fmtUsd(feeEst.builder)} interface fee)` : ''}`} />
             </dl>
-            <p className="text-[11px] text-ink-400">Estimates only — liquidation price and fees are calculated by Hyperliquid at execution. Your wallet will ask you to sign.</p>
+            <p className="text-[11px] text-ink-400">Estimates only — liquidation price and fees are calculated by Hyperliquid at execution. {oneClick ? 'Signed instantly by your one-click agent wallet.' : 'Your wallet will ask you to sign.'}</p>
             <div className="grid grid-cols-2 gap-2">
               <button className="btn-ghost" disabled={busy} onClick={() => setConfirming(false)}>Cancel</button>
               <button className={isBuy ? 'btn-up' : 'btn-down'} disabled={busy} onClick={submit}>{busy ? 'Waiting…' : 'Confirm'}</button>

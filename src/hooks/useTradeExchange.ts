@@ -2,13 +2,19 @@ import { useCallback } from 'react'
 import type { ExchangeClient } from '@nktkas/hyperliquid'
 import { exchangeFor, walletAdapter } from '@/lib/hl/clients'
 import { useWalletApi } from '@/wallet/context'
+import { agentAccount, useAgent } from '@/stores/agent'
 
 /**
- * Returns a function producing the ExchangeClient used for trading actions (orders, cancels, leverage).
- * Stage 2: signs with the main wallet. Stage 3 swaps in the locally stored agent key when one-click
- * trading is enabled — withdrawals and approvals always use `useMainExchange` instead.
+ * ExchangeClient for TRADING actions only (orders, cancels, leverage). With one-click trading enabled it
+ * signs locally with the agent key (no wallet popup); otherwise the main wallet signs each action.
  */
 export function useTradeExchange() {
   const w = useWalletApi()
-  return useCallback(async (): Promise<ExchangeClient> => exchangeFor(walletAdapter(await w.getMainWalletClient())), [w])
+  return useCallback(async (): Promise<ExchangeClient> => {
+    const { agent, status } = useAgent.getState()
+    if (agent && status === 'active') return exchangeFor(agentAccount(agent))
+    return exchangeFor(walletAdapter(await w.getMainWalletClient()))
+  }, [w])
 }
+
+export const useOneClick = () => useAgent((s) => s.status === 'active')
