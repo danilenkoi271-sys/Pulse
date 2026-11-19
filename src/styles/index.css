@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+html, body, #root { height: 100%; }
+body {
+  @apply bg-ink-950 text-ink-100 font-sans antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+::selection { background: rgba(124, 92, 255, 0.45); }
+* { scrollbar-width: thin; scrollbar-color: #262e41 transparent; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+@layer components {
+  .card { @apply rounded-xl border border-ink-700/70 bg-ink-900; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pulse-400; }
+  .btn-primary { @apply btn bg-gradient-to-br from-pulse-500 to-pulse-600 text-white shadow-glow hover:brightness-110 active:brightness-95; }
+  .btn-ghost { @apply btn border border-ink-600 bg-ink-800/60 text-ink-100 hover:bg-ink-700; }
+  .btn-up { @apply btn bg-up text-ink-950 hover:brightness-110; }
+  .btn-down { @apply btn bg-down text-ink-950 hover:brightness-110; }
+  .input { @apply w-full rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-400 focus:border-pulse-400 focus:outline-none focus:ring-1 focus:ring-pulse-400; }
+  .label { @apply mb-1 flex items-center gap-1 text-xs font-medium text-ink-300; }
+  .chip { @apply rounded-md px-2 py-1 text-xs font-medium text-ink-300 transition hover:bg-ink-700 hover:text-ink-100; }
+  .chip-active { @apply bg-ink-700 text-ink-100; }
+  .th { @apply px-3 py-2 text-left text-[11px] font-medium uppercase tracking-wide text-ink-400; }
+}
+
+.flash-up { animation: flashUp .6s ease-out; }
+.flash-down { animation: flashDown .6s ease-out; }
+.hero-grid {
+  background-image: linear-gradient(rgba(124,92,255,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(124,92,255,.07) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at 50% 30%, #000 20%, transparent 70%);
+}
+.text-gradient { background: linear-gradient(100deg, #b3a6ff, #7c5cff 45%, #4dd6ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+@media (prefers-reduced-motion: reduce) { *, ::before, ::after { animation: none !important; transition: none !important; } }

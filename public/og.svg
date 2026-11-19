@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9a87ff"/><stop offset="1" stop-color="#4dd6ff"/></linearGradient></defs>
+  <rect width="1200" height="630" fill="#06080c"/>
+  <path d="M120 360h220l70-190 120 380 90-270 60 80h400" fill="none" stroke="url(#g)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="120" y="500" fill="#dde2ee" font-family="system-ui,sans-serif" font-size="96" font-weight="700">Pulse</text>
+  <text x="120" y="560" fill="#8591ab" font-family="system-ui,sans-serif" font-size="36">Trade Hyperliquid. Keep your keys.</text>
+</svg>
